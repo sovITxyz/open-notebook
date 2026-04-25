@@ -1,0 +1,37 @@
+name: Sync from upstream
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Push upstream main to upstream-sync branch
+        run: |
+          git remote add upstream https://github.com/lfnovo/open-notebook.git
+          git fetch upstream main
+          git push origin upstream/main:refs/heads/upstream-sync --force
+
+      - name: Open or update PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          existing=$(gh pr list --head upstream-sync --base main --state open --json number -q '.[0].number' || true)
+          if [ -z "$existing" ]; then
+            gh pr create --base main --head upstream-sync \
+              --title "Sync from upstream (lfnovo/open-notebook)" \
+              --body "Automated daily sync. Review the diff and merge when ready."
+          else
+            echo "PR #$existing already open; force-push refreshed it."
+          fi
