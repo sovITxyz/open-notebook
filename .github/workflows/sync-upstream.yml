@@ -18,12 +18,20 @@ jobs:
           fetch-depth: 0
 
       - name: Push upstream main to upstream-sync branch
+        id: push
         run: |
           git remote add upstream https://github.com/lfnovo/open-notebook.git
           git fetch upstream main
+          if git merge-base --is-ancestor upstream/main origin/main; then
+            echo "::notice::Upstream has no new commits — nothing to sync."
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "has_changes=true" >> "$GITHUB_OUTPUT"
           git push origin upstream/main:refs/heads/upstream-sync --force
 
       - name: Open or update PR
+        if: steps.push.outputs.has_changes == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
