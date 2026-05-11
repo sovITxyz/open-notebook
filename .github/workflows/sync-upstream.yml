@@ -26,6 +26,7 @@ jobs:
       - name: Open or update PR
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
         run: |
           existing=$(gh pr list --head upstream-sync --base main --state open --json number -q '.[0].number' || true)
           if [ -z "$existing" ]; then
